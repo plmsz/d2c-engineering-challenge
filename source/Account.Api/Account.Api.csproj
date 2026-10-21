@@ -12,4 +12,8 @@
     <ProjectReference Include="..\Account.Tasks\Account.Tasks.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Cronos" Version="0.13.0" />
+  </ItemGroup>
+
 </Project>

@@ -42,11 +42,13 @@ namespace Account.Api
             services.AddScoped<IRepository, Repository>();
             services.AddScoped<IBiometricVerificationQuery, BiometricVerificationQuery>();
             services.AddScoped<IBiometricProvider, FakeBiometricProvider>();
-            services.AddSingleton<ILoanResources, InMemoryLoanResources>();
+            services.AddScoped<ILoanResources, InMemoryLoanResources>();
             services.AddScoped<IMediator, Mediator>();
             services.AddScoped<IRequestHandler<ProcessBiometricVerificationCommand, BiometricVerificationResponse>, ProcessBiometricVerificationCommandHandler>();
-            services.AddSingleton<IScheduledJob, SyncBiometricVerificationsJob>();
-        }
+            // Removido: AddSingleton<IScheduledJob, SyncBiometricVerificationsJob>()
+            services.AddScoped<SyncBiometricVerificationsJob>();
+            services.AddHostedService<ScheduledJobHostedService>();
+            }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
