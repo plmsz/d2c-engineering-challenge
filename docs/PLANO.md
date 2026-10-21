@@ -25,7 +25,7 @@
 
 **Fase 2 — Etapa 2: Processamento Assíncrono (O Coração do Desafio)**
 
-* **2.1:** **Decisão Arquitetural:** O README já define o caminho com a pasta `Account.Tasks/ # Jobs agendados`. Aborte a pesquisa por outras opções e implemente a reconsulta de pendências diretamente no `SyncBiometricVerificationsJob.cs`.
+* **2.1:** **Decisão Arquitetural:** O README já define o caminho com a pasta `Account.Tasks/ # Jobs agendados`. 
 * **2.2:** Alterar o `ProcessBiometricVerificationCommand` para **não travar o request**. Se a primeira consulta retornar `PENDING` (ou cair no fallback de texto qualquer), persista como `PENDING` e devolva a resposta HTTP imediatamente para o cliente.
 * **2.3:** No `SyncBiometricVerificationsJob`, implemente a lógica que busca no repositório todas as verificações paradas em `PENDING`, chama o provedor para cada uma, e atualiza o estado via Aggregate se houver mudança.
 * **2.4:** **O truque do Mock para Testes:** Como o `FakeBiometricProvider` responde baseado apenas no texto da referência, para testar a transição de um Job (de PENDING para APPROVED), você precisará implementar um estado interno (um dicionário ou contador) no *FakeProvider* para que ele responda PENDING na primeira chamada e APPROVED na segunda, permitindo que o teste do Job valide a mudança de estado com sucesso.
