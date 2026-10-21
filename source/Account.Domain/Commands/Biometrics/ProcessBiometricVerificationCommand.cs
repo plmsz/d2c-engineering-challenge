@@ -25,7 +25,7 @@ namespace Account.Domain.Commands.Biometrics
 
         public class ProcessBiometricVerificationRequest
         {
-            [Required(ErrorMessage = "Campo obrigatório")]
+            [Required(ErrorMessage = "Campo obrigatorio")]
             public string Reference { get; set; }
         }
     }
@@ -50,10 +50,12 @@ namespace Account.Domain.Commands.Biometrics
         protected override async Task<CommandHandlerResponse<BiometricVerification>> HandleRequest(ProcessBiometricVerificationCommand command, BiometricVerificationAggregate aggregate, CancellationToken cancellationToken)
         {
             if (command?.Request == null || string.IsNullOrWhiteSpace(command.Request.Reference))
-                throw new BusinessException("Referência da verificação é obrigatória.");
+                throw new BusinessException("Referencia da verificacao e obrigatoria.");
 
             var current = await _query.GetByReference(command.Request.Reference);
-            await _provider.GetByReference(command.Request.Reference);
+
+            var providerResponse = await _provider.GetByReference(command.Request.Reference);
+            var domainStatus = BiometricProviderStatusMapper.Map(command.Request.Reference, providerResponse.Status);
 
             if (current == null)
             {
@@ -61,6 +63,9 @@ namespace Account.Domain.Commands.Biometrics
                 current.Reference = command.Request.Reference;
                 current.Status = BiometricVerificationStatus.Pending;
             }
+
+            aggregate.ApplyResult(current, domainStatus, providerResponse.Status);
+            await _repository.UpdateAsync(current);
 
             return CommandHandlerResponse<BiometricVerification>.UpdateResult(current.Id, current);
         }

@@ -8,6 +8,8 @@ namespace Account.Domain.Aggregates.Biometrics
     {
         public void ApplyResult(BiometricVerification verification, BiometricVerificationStatus status, string resultDescription)
         {
+            if (verification == null) throw new ArgumentNullException(nameof(verification));
+
             verification.Status = status;
             verification.ResultDescription = resultDescription;
             verification.UpdatedAt = DateTime.UtcNow;
