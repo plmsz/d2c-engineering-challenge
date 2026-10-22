@@ -18,7 +18,7 @@
 
 **Fase 1 — Etapa 1: Processamento Síncrono**
 
-* **1.1:** Criar a camada de *Anti-Corruption* no `Account.Data` (provavelmente dentro de `FakeBiometricProvider`). É aqui que a string do provedor externo vira o seu `BiometricVerificationStatus` interno.
+* **1.1:** Criar a camada de *Anti-Corruption* no `Account.Domain` (dentro de `Provider`). É aqui que a string do provedor externo vira o seu `BiometricVerificationStatus` interno.
 * **1.2:** Implementar o fluxo do `ProcessBiometricVerificationCommand`. O handler chama o provedor, o Aggregate processa a transição de estado, e o `IRepository` persiste os dados em memória.
 * **1.3:** Ajustar o endpoint `GET` para consumir o `IBiometricVerificationQuery`, buscando o estado persistido diretamente da memória, e não indo ao provedor novamente.
 * **1.4:** Escrever os testes usando o padrão AAA (Arrange, Act, Assert). Como você prefere testar a interação, foque em enviar o comando e verificar o estado final no repositório, em vez de mockar os detalhes de implementação internos do handler.
@@ -40,4 +40,3 @@
 
 * **4.1:** Documentar o `README.md` da sua entrega. Deixe claro o fluxo: Controller -> Mediator -> Command -> Provider -> Aggregate -> Repo.
 * **4.2:** Escrever as limitações conhecidas: Dados voláteis (em memória), ausência de mensageria real (RabbitMQ/Azure Service Bus), e como isso seria resolvido em um ambiente de produção.
-* **4.3:** Preparar o roteiro de explicação em formato **STAR** (Situação, Tarefa, Ação, Resultado). Estruture a explicação da Etapa 2 (Jobs Assíncronos) como um *case* clássico de design de sistemas que resolve problemas de timeout e gargalos em APIs de terceiros.

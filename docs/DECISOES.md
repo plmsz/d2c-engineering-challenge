@@ -43,3 +43,16 @@ Trade-off: se o job demorar mais que o intervalo, os horários atrasados rodam e
 - Decisão: adicionar um método de leitura em IBiometricVerificationQuery (ex.: GetPendingAsync) e implementá-lo em Account.Data, lendo do BiometricVerificationStore. A escrita continua passando por IRepository.
 - Alternativas descartadas: o job ler o store diretamente (quebra a separação de Account.Data e Account.Domain); o job manter a própria lista de referências (duplica estado).
 - Trade-off: uma mudança na interface de domínio, que exige atualizar as implementações existentes.
+
+## 07 — Criação atômica da verificação por referência
+
+- Contexto: o handler do POST lê a verificação pela referência, chama o provedor e depois cria e grava um registro novo. Essas etapas não são atômicas, então dois POSTs simultâneos com a mesma referência criam registros com `id`s diferentes (observado: 10 POSTs geraram 4 e 8 ids distintos).
+- Decisão: criar a interface `IBiometricVerificationRepository` em `Account.Domain/Repositories`, com `GetOrCreateByReference(reference, create)`, implementada em `Account.Data` por delegação ao `BiometricVerificationStore`. O store executa leitura, criação e escrita sob um único lock. O handler usa essa interface e só chama `ApplyResult` e `UpdateAsync` quando o status muda ou a verificação acabou de ser criada. `IRepository` e `Account.Domain/Framework` não mudam.
+- Alternativas descartadas: `ConcurrentDictionary.GetOrAdd` com factory (a factory pode executar mais de uma vez e gerar entidades descartadas); lock estático no handler (estado global no domínio); alterar `IRepository` (viola a regra de não mexer em `Framework`).
+- Trade-off: uma interface a mais no domínio e um lock global no store. Aceitável para store em memória. Dois POSTs simultâneos recebem a mesma instância; como escrevem o mesmo status, o resultado é consistente, mas não há lock por entidade.# 08 — Idempotência e concorrência com GetOrCreateByReference
+
+Contexto: o processo de verificação de biometria pode receber a mesma referência múltiplas vezes enquanto o status está PENDING. É necessário evitar dupla inserção/processamento.
+
+Decisão: Implementar o padrão GetOrCreateByReference no repositório para garantir que, para uma dada referência, apenas uma instância de BiometricVerification seja criada e gerenciada. O método atomicamente verifica a existência e, se não existir, cria usando o delegado fornecido. No handler do comando, a chamada a GetOrCreateByReference substitui o padrão GetByReference + null check + nova instância, seguido de UpdateAsync. Após mapear o status do provedor, aplica-se o resultado e persiste apenas se current.Status != domainStatus, garantindo idempotência natural mesmo com múltiplas requisições concorrentes.
+
+Alternativas descartadas: manter o padrão original GetByReference + null check (risco de dupla inserção); usar bloqueio no nível da controller (quebra da separação de responsabilidades); usar lock no aggregate (dificulta testing e viola a encapsulacão).
