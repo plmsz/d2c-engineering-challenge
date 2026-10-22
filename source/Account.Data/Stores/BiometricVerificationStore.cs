@@ -1,6 +1,9 @@
+using Account.Domain.Enums;
 using Account.Domain.Entities.Biometrics;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Account.Data.Stores
 {
@@ -31,6 +34,11 @@ namespace Account.Data.Stores
 
             _byId.TryGetValue(id, out var verification);
             return verification;
+        }
+
+        public List<BiometricVerification> GetPending()
+        {
+            return _byId.Values.Where(v => v.Status == BiometricVerificationStatus.Pending).ToList();
         }
     }
 }
