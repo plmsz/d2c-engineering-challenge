@@ -11,6 +11,7 @@ using Account.Domain.Framework.Layers.Domain.Validations;
 using Account.Domain.Providers;
 using Account.Domain.Queries.Biometrics;
 using Account.Domain.Responses;
+using Account.Domain.Repositories;
 
 namespace Account.Domain.Commands.Biometrics
 {
@@ -35,16 +36,19 @@ namespace Account.Domain.Commands.Biometrics
         private readonly IBiometricVerificationQuery _query;
         private readonly IRepository _repository;
         private readonly IBiometricProvider _provider;
+        private readonly IBiometricVerificationRepository _repositoryBiometric;
 
         public ProcessBiometricVerificationCommandHandler(
             IServiceProvider serviceProvider,
             IBiometricVerificationQuery query,
             IRepository repository,
-            IBiometricProvider provider) : base(serviceProvider)
+            IBiometricProvider provider,
+            IBiometricVerificationRepository repositoryBiometric) : base(serviceProvider)
         {
             _query = query;
             _repository = repository;
             _provider = provider;
+            _repositoryBiometric = repositoryBiometric;
         }
 
         protected override async Task<CommandHandlerResponse<BiometricVerification>> HandleRequest(ProcessBiometricVerificationCommand command, BiometricVerificationAggregate aggregate, CancellationToken cancellationToken)
@@ -52,20 +56,22 @@ namespace Account.Domain.Commands.Biometrics
             if (command?.Request == null || string.IsNullOrWhiteSpace(command.Request.Reference))
                 throw new BusinessException("Referencia da verificacao e obrigatoria.");
 
-            var current = await _query.GetByReference(command.Request.Reference);
+            var (current, created) = _repositoryBiometric.GetOrCreateByReference(command.Request.Reference, () =>
+            {
+                var newVer = BiometricVerification.New();
+                newVer.Reference = command.Request.Reference;
+                newVer.Status = BiometricVerificationStatus.Pending;
+                return newVer;
+            });
 
             var providerResponse = await _provider.GetByReference(command.Request.Reference);
             var domainStatus = BiometricProviderStatusMapper.Map(command.Request.Reference, providerResponse.Status);
 
-            if (current == null)
+            if (created || current.Status != domainStatus)
             {
-                current = BiometricVerification.New();
-                current.Reference = command.Request.Reference;
-                current.Status = BiometricVerificationStatus.Pending;
+                aggregate.ApplyResult(current, domainStatus, providerResponse.Status);
+                await _repository.UpdateAsync(current);
             }
-
-            aggregate.ApplyResult(current, domainStatus, providerResponse.Status);
-            await _repository.UpdateAsync(current);
 
             return CommandHandlerResponse<BiometricVerification>.UpdateResult(current.Id, current);
         }

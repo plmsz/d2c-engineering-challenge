@@ -12,6 +12,7 @@ using Account.Domain.Framework.Layers.Domain.Validations;
 using Account.Domain.Providers;
 using Account.Domain.Queries.Biometrics;
 using Account.Domain.Responses;
+using Account.Domain.Repositories;
 using Account.Domain.Services;
 using Account.Tasks.Jobs;
 using Microsoft.AspNetCore.Builder;
@@ -41,6 +42,7 @@ namespace Account.Api
             services.AddScoped<IUnitOfWork, InMemoryUnitOfWork>();
             services.AddScoped<IRepository, Repository>();
             services.AddScoped<IBiometricVerificationQuery, BiometricVerificationQuery>();
+            services.AddScoped<IBiometricVerificationRepository, BiometricVerificationRepository>();
             services.AddScoped<IBiometricProvider, FakeBiometricProvider>();
             services.AddScoped<ILoanResources, InMemoryLoanResources>();
             services.AddScoped<IMediator, Mediator>();
