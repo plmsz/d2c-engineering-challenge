@@ -34,7 +34,7 @@ namespace Account.Tasks.Jobs
             _query = query;
         }
 
-        public string Schedule => "0 */2 * * * *";
+        public string Schedule => "0 */15 * * * *";
 
         public async Task DoWorkAsync()
         {
